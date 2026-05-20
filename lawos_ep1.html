@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAW OS — 1화: 삭제된 규칙</title>
+<style>
+  /* ===== FONTS ===== */
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Share+Tech+Mono&display=swap');
+
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:     #030c1a;
+    --bg-panel:    #071428;
+    --bg-card:     #0a1e3d;
+    --bg-card2:    #0d2347;
+    --neon-blue:   #00b8ff;
+    --neon-cyan:   #00ffe7;
+    --neon-red:    #ff2d4a;
+    --neon-amber:  #ffb020;
+    --neon-green:  #00ff7f;
+    --text-main:   #cce8ff;
+    --text-dim:    #5a8aaa;
+    --text-bright: #eaf8ff;
+    --border-blue: #0d4a7a;
+    --border-glow: #00b8ff44;
+    --font-ui:     'Share Tech Mono', monospace;
+    --font-main:   'Noto Sans KR', sans-serif;
+  }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--text-main);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== SCANLINE OVERLAY ===== */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ===== SCREEN MANAGER ===== */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ===== TOP HUD ===== */
+  .hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(3,12,26,0.95);
+    border-bottom: 1px solid var(--border-blue);
+    padding: 8px 20px;
+    display: flex; align-items: center; gap: 16px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .hud-logo {
+    color: var(--neon-blue);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    white-space: nowrap;
+  }
+  .hud-sep { color: var(--border-blue); }
+  .hud-ep { color: var(--neon-cyan); letter-spacing: 1px; }
+  .hud-spacer { flex: 1; }
+  .hud-chaos-label { color: var(--text-dim); }
+  .hud-chaos-bar {
+    width: 120px; height: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .hud-chaos-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--neon-amber), var(--neon-red));
+    transition: width 0.8s ease;
+    border-radius: 4px;
+  }
+  .hud-chaos-val { color: var(--neon-amber); min-width: 32px; text-align: right; }
+  .hud-status { color: var(--neon-green); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ===== CONTENT WRAPPER ===== */
+  .content {
+    margin-top: 50px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ===== TITLE SCREEN ===== */
+  .title-screen {
+    background: var(--bg-deep);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .title-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 50% 60%, #001a3a 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 30%, #001433 0%, transparent 60%);
+  }
+  .title-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border-blue) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-blue) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.25;
+  }
+  .title-inner {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 20px;
+    padding: 40px 20px;
+  }
+  .title-system {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    color: var(--neon-cyan);
+    letter-spacing: 4px;
+    border: 1px solid var(--neon-cyan);
+    padding: 4px 16px;
+    opacity: 0.7;
+  }
+  .title-main {
+    font-size: clamp(32px, 8vw, 56px);
+    font-weight: 900;
+    color: var(--text-bright);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .title-sub {
+    font-family: var(--font-ui);
+    font-size: clamp(14px, 3vw, 18px);
+    color: var(--neon-blue);
+    letter-spacing: 2px;
+  }
+  .title-ep {
+    font-size: clamp(11px, 2vw, 13px);
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .title-divider {
+    width: 80px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+  }
+  .title-story {
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 420px;
+    line-height: 1.8;
+  }
+  .title-story strong { color: var(--text-main); }
+  .title-warning {
+    background: rgba(255,45,74,0.1);
+    border: 1px solid var(--neon-red);
+    padding: 10px 20px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    color: var(--neon-red);
+    letter-spacing: 1px;
+    animation: flicker 3s infinite;
+  }
+  @keyframes flicker {
+    0%,94%,96%,100%{opacity:1} 95%{opacity:0.4}
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn-primary {
+    background: transparent;
+    border: 2px solid var(--neon-blue);
+    color: var(--neon-blue);
+    font-family: var(--font-main);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px 36px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--neon-blue);
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+    z-index: -1;
+  }
+  .btn-primary:hover::before { transform: translateX(0); }
+  .btn-primary:hover { color: var(--bg-deep); }
+  .btn-primary:active { transform: scale(0.97); }
+
+  .btn-choice {
+    background: rgba(0,184,255,0.05);
+    border: 1px solid var(--border-blue);
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 14px;
+    padding: 14px 20px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    border-radius: 4px;
+    line-height: 1.5;
+    width: 100%;
+  }
+  .btn-choice:hover {
+    background: rgba(0,184,255,0.15);
+    border-color: var(--neon-blue);
+    color: var(--text-bright);
+    transform: translateX(4px);
+  }
+  .btn-choice .choice-label {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--neon-cyan);
+    display: block;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  .btn-choice.danger {
+    border-color: rgba(255,45,74,0.3);
+  }
+  .btn-choice.danger:hover {
+    background: rgba(255,45,74,0.1);
+    border-color: var(--neon-red);
+  }
+  .btn-choice.safe {
+    border-color: rgba(0,255,127,0.3);
+  }
+  .btn-choice.safe:hover {
+    background: rgba(0,255,127,0.08);
+    border-color: var(--neon-green);
+  }
+
+  /* ===== DIALOGUE BOX ===== */
+  .dialogue-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 20px;
+    animation: slideUp 0.4s ease;
+  }
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(20px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .dialogue-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-blue);
+    background: rgba(0,184,255,0.05);
+  }
+  .char-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    border: 2px solid currentColor;
+  }
+  .char-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--text-bright);
+  }
+  .char-role {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .dialogue-text {
+    padding: 16px 20px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text-main);
+  }
+  .dialogue-text .highlight { color: var(--neon-cyan); font-weight: 700; }
+  .dialogue-text .warn { color: var(--neon-red); font-weight: 700; }
+  .dialogue-text .em { color: var(--neon-amber); }
+
+  /* ===== SYSTEM ALERT ===== */
+  .sys-alert {
+    background: rgba(255,45,74,0.08);
+    border: 1px solid var(--neon-red);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    font-family: var(--font-ui);
+    animation: pulse-red 2s infinite;
+  }
+  @keyframes pulse-red {
+    0%,100%{border-color:var(--neon-red)} 50%{border-color:rgba(255,45,74,0.3)}
+  }
+  .sys-alert-title {
+    font-size: 11px;
+    color: var(--neon-red);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .sys-alert-body {
+    font-size: 12px;
+    color: #ff8a99;
+    line-height: 1.6;
+  }
+  .sys-alert-body span { color: var(--neon-red); }
+
+  /* ===== INFO CARD ===== */
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  .info-card-title {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--neon-cyan);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+  .info-card-body {
+    font-size: 14px;
+    color: var(--text-main);
+    line-height: 1.7;
+  }
+  .info-card-body li {
+    padding: 4px 0;
+    padding-left: 16px;
+    position: relative;
+  }
+  .info-card-body li::before {
+    content: '▸';
+    position: absolute; left: 0;
+    color: var(--neon-blue);
+  }
+
+  /* ===== SCENE SECTIONS ===== */
+  .scene-title {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--neon-cyan);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+  .scene-heading {
+    font-size: clamp(18px, 4vw, 24px);
+    font-weight: 900;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .scene-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    font-family: var(--font-ui);
+  }
+  .choices {
+    display: flex; flex-direction: column; gap: 10px;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  /* ===== CITY MAP / SIMULATION ===== */
+  .city-map {
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    padding: 20px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .city-map-title {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--neon-blue);
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .map-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .map-zone {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-blue);
+    border-radius: 6px;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .map-zone:hover {
+    border-color: var(--neon-blue);
+    background: rgba(0,184,255,0.1);
+  }
+  .map-zone.danger {
+    border-color: rgba(255,45,74,0.5);
+    animation: zone-pulse 2s infinite;
+  }
+  @keyframes zone-pulse {
+    0%,100%{background:rgba(255,45,74,0.05)} 50%{background:rgba(255,45,74,0.12)}
+  }
+  .map-zone.visited {
+    border-color: var(--neon-green);
+    background: rgba(0,255,127,0.05);
+  }
+  .zone-icon { font-size: 24px; margin-bottom: 6px; }
+  .zone-name { font-size: 12px; color: var(--text-main); font-weight: 700; }
+  .zone-status { font-family: var(--font-ui); font-size: 10px; margin-top: 4px; }
+
+  /* ===== CHAOS METER (inline) ===== */
+  .chaos-meter {
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  .chaos-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .chaos-label {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+  .chaos-num {
+    font-family: var(--font-ui);
+    font-size: 18px;
+    color: var(--neon-amber);
+    font-weight: 700;
+  }
+  .chaos-bar-bg {
+    height: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-blue);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .chaos-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-amber), var(--neon-red));
+    transition: width 0.8s ease;
+    border-radius: 6px;
+  }
+  .chaos-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    font-family: var(--font-ui);
+  }
+
+  /* ===== RECORD / LOG ===== */
+  .log-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    width: 100%;
+    font-family: var(--font-ui);
+    font-size: 12px;
+  }
+  .log-title {
+    color: var(--neon-cyan);
+    letter-spacing: 2px;
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  .log-entry {
+    display: flex; gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(13,74,122,0.4);
+    color: var(--text-dim);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: var(--neon-blue); min-width: 48px; }
+  .log-msg { color: var(--text-main); }
+  .log-msg.bad { color: #ff8a99; }
+  .log-msg.warn { color: var(--neon-amber); }
+  .log-msg.good { color: var(--neon-green); }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-line {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 20px;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .prog-step {
+    width: 24px; height: 24px;
+    border: 1px solid var(--border-blue);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    transition: all 0.3s;
+  }
+  .prog-step.done { border-color: var(--neon-green); color: var(--neon-green); }
+  .prog-step.active { border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue)44; }
+  .prog-connector { flex: 1; height: 1px; background: var(--border-blue); }
+  .prog-connector.done { background: var(--neon-green); }
+
+  /* ===== CHARACTER INTRO ===== */
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .char-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    padding: 14px 12px;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .char-card:hover { border-color: var(--neon-blue); }
+  .char-card .avatar {
+    font-size: 28px;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .char-card .cname {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 3px;
+  }
+  .char-card .ctag {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ===== ENDING ===== */
+  .ending-badge {
+    background: rgba(0,255,127,0.08);
+    border: 2px solid var(--neon-green);
+    border-radius: 50%;
+    width: 80px; height: 80px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 20px;
+    animation: rotateGlow 4s linear infinite;
+  }
+  @keyframes rotateGlow {
+    0%{box-shadow:0 0 20px var(--neon-green)44} 50%{box-shadow:0 0 40px var(--neon-green)88} 100%{box-shadow:0 0 20px var(--neon-green)44}
+  }
+  .ending-hint {
+    background: rgba(255,176,32,0.08);
+    border: 1px solid var(--neon-amber);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    color: var(--neon-amber);
+    letter-spacing: 1px;
+    line-height: 1.8;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  .key-concept {
+    background: rgba(0,184,255,0.06);
+    border: 1px solid var(--neon-blue);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+  .key-concept-title {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--neon-blue);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+  .key-concept ul {
+    list-style: none;
+    font-size: 14px;
+    color: var(--text-main);
+    line-height: 1.9;
+  }
+  .key-concept li::before { content: '◆ '; color: var(--neon-blue); font-size: 10px; }
+
+  /* ===== NEXT TEASER ===== */
+  .teaser {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-blue);
+    border-radius: 8px;
+    padding: 16px 20px;
+    width: 100%;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    position: relative;
+    overflow: hidden;
+  }
+  .teaser::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--neon-red);
+  }
+  .teaser-label {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    color: var(--neon-red);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  /* ===== NOTIFICATION POPUP ===== */
+  .notif-overlay {
+    position: fixed; inset: 0;
+    background: rgba(3,12,26,0.85);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .notif-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .notif-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--neon-red);
+    border-radius: 8px;
+    padding: 24px 28px;
+    max-width: 380px;
+    width: 100%;
+    transform: scale(0.9);
+    transition: transform 0.3s;
+    box-shadow: 0 0 40px rgba(255,45,74,0.2);
+  }
+  .notif-overlay.show .notif-box { transform: scale(1); }
+  .notif-box-title {
+    font-family: var(--font-ui);
+    font-size: 12px;
+    color: var(--neon-red);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+  .notif-box-body {
+    font-size: 14px;
+    color: var(--text-main);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .notif-box-body .key { color: var(--neon-cyan); font-weight: 700; }
+  .notif-close {
+    background: transparent;
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    font-family: var(--font-main);
+    font-size: 13px;
+    padding: 8px 20px;
+    cursor: pointer;
+    float: right;
+  }
+  .notif-close:hover { background: rgba(0,184,255,0.15); }
+
+  /* ===== INTRO CITY VISUAL ===== */
+  .city-visual {
+    width: 100%; max-width: 500px;
+    height: 160px;
+    position: relative;
+    margin: 0 auto 16px;
+    overflow: hidden;
+  }
+  .city-buildings {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    display: flex; align-items: flex-end; gap: 3px;
+    padding: 0 10px;
+  }
+  .building {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border-blue);
+    border-bottom: none;
+    border-radius: 2px 2px 0 0;
+    position: relative;
+    min-width: 20px;
+  }
+  .building::after {
+    content: '';
+    position: absolute; top: 30%; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 6px,
+      rgba(0,184,255,0.15) 6px, rgba(0,184,255,0.15) 8px
+    );
+  }
+  .city-glow {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(to top, rgba(0,184,255,0.1), transparent);
+  }
+
+  /* ===== MOBILE ===== */
+  @media (max-width: 480px) {
+    .hud { padding: 6px 12px; }
+    .hud-chaos-bar { width: 80px; }
+    .content { padding: 16px 14px; }
+    .map-grid { grid-template-columns: repeat(2, 1fr); }
+    .char-grid { grid-template-columns: repeat(2, 1fr); }
+    .btn-primary { padding: 12px 24px; font-size: 14px; }
+    .dialogue-text { font-size: 14px; }
+  }
+
+  /* ===== TYPE ANIMATION ===== */
+  .type-text { overflow: hidden; white-space: pre-wrap; }
+
+  /* ===== UTILITY ===== */
+  .mt8 { margin-top: 8px; }
+  .mt16 { margin-top: 16px; }
+  .center { text-align: center; }
+  .w100 { width: 100%; }
+  .flex-col { display: flex; flex-direction: column; gap: 12px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ============================= HUD ============================= -->
+<div class="hud">
+  <span class="hud-logo">LAW OS</span>
+  <span class="hud-sep">|</span>
+  <span class="hud-ep">EP.01 삭제된 규칙</span>
+  <span class="hud-spacer"></span>
+  <span class="hud-chaos-label">혼란도</span>
+  <div class="hud-chaos-bar"><div class="hud-chaos-fill" id="hudChaos"></div></div>
+  <span class="hud-chaos-val" id="hudChaosVal">0%</span>
+  <span class="hud-sep">|</span>
+  <span class="hud-status" id="hudStatus">● ONLINE</span>
+</div>
+
+<!-- ============================= NOTIFICATION ============================= -->
+<div class="notif-overlay" id="notifOverlay">
+  <div class="notif-box">
+    <div class="notif-box-title" id="notifTitle">SYSTEM ALERT</div>
+    <div class="notif-box-body" id="notifBody">알림 내용</div>
+    <button class="notif-close" onclick="closeNotif()">확인</button>
+    <div style="clear:both"></div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 0: TITLE ============================= -->
+<div class="screen active" id="screen0">
+  <div class="title-screen" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+    <div class="title-grid"></div>
+    <div class="title-inner">
+      <div class="title-system">LIBERTY CITY — LAW OS v1.0</div>
+      <div class="title-main">LAW OS</div>
+      <div class="title-sub">법과 인권 수호 시스템</div>
+      <div class="title-divider"></div>
+      <div class="title-ep">1화 / 10화 · 사회 5학년 「법과 인권」 단원</div>
+      <div style="font-size:clamp(20px,5vw,32px);font-weight:900;color:var(--neon-red);letter-spacing:-0.5px;">
+        《 삭제된 규칙 》
+      </div>
+      <div class="title-story">
+        스마트 도시 <strong>리버티 시티</strong>.<br>
+        오늘 아침, 도시를 관리하는 AI <strong>LAW OS</strong>에<br>
+        이상한 오류가 발생했다.
+      </div>
+      <div class="title-warning">⚠ LAW OS CRITICAL ERROR — 제재 기능 비활성화</div>
+      <div class="city-visual">
+        <div class="city-buildings">
+          <div class="building" style="height:80px"></div>
+          <div class="building" style="height:120px"></div>
+          <div class="building" style="height:60px"></div>
+          <div class="building" style="height:140px"></div>
+          <div class="building" style="height:90px"></div>
+          <div class="building" style="height:100px"></div>
+          <div class="building" style="height:50px"></div>
+          <div class="building" style="height:110px"></div>
+          <div class="building" style="height:75px"></div>
+          <div class="building" style="height:130px"></div>
+        </div>
+        <div class="city-glow"></div>
+      </div>
+      <button class="btn-primary" onclick="goTo(1)">▶ 조사 시작하기</button>
+      <div style="font-family:var(--font-ui);font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-top:8px;">
+        플레이 시간: 약 5~10분
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 1: 아리 브리핑 ============================= -->
+<div class="screen" id="screen1">
+  <div class="content">
+    <div class="scene-title">SCENE 01 — LAW OS 오류 발생</div>
+    <div class="scene-heading">긴급 브리핑</div>
+    <div class="scene-sub">아리가 상황을 설명한다</div>
+
+    <div class="sys-alert">
+      <div class="sys-alert-title">⚠ LAW OS CRITICAL ALERT</div>
+      <div class="sys-alert-body">
+        <span>[ERROR CODE 0x4C41-57]</span> 제재 기능(SANCTION MODULE) 삭제됨<br>
+        영향 구역: 리버티 초등학교 전 구역<br>
+        경과 시간: 00:03:14 — 혼란 지수 상승 중
+      </div>
+    </div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-cyan);border-color:var(--neon-cyan);">🤖</div>
+        <div>
+          <div class="char-name">아리 (ARI)</div>
+          <div class="char-role">LAW OS 보조 AI</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        안녕하세요. 저는 <span class="highlight">LAW OS 보조 AI 아리</span>입니다.<br><br>
+        오늘 새벽, 리버티 시티 법률 시스템에 <span class="warn">심각한 오류</span>가 발생했어요. 누군가가 몰래 <span class="warn">제재 기능을 삭제</span>했습니다.<br><br>
+        제재 기능이란, 규칙을 어겼을 때 <span class="em">불이익을 주는 시스템</span>이에요. 이게 사라지면... 어떤 일이 생길지 상상해보세요.
+      </div>
+    </div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-cyan);border-color:var(--neon-cyan);">🤖</div>
+        <div>
+          <div class="char-name">아리 (ARI)</div>
+          <div class="char-role">LAW OS 보조 AI</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        당신에게 <span class="highlight">시민 조사 권한</span>을 드릴게요.<br>
+        학교 현장을 직접 조사하고, LAW OS 복구를 도와주세요.<br><br>
+        <span class="em">중요: 당신의 선택이 도시의 혼란도를 결정합니다.</span>
+      </div>
+    </div>
+
+    <button class="btn-primary w100" onclick="goTo(2)">▶ 캐릭터 소개 보기</button>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 2: 캐릭터 소개 ============================= -->
+<div class="screen" id="screen2">
+  <div class="content">
+    <div class="scene-title">SCENE 01 — 등장인물</div>
+    <div class="scene-heading">리버티 초등학교 친구들</div>
+    <div class="scene-sub">함께 사건을 조사할 동료들이다</div>
+
+    <div class="char-grid">
+      <div class="char-card">
+        <span class="avatar">🤖</span>
+        <div class="cname">아리</div>
+        <div class="ctag">LAW OS AI</div>
+      </div>
+      <div class="char-card">
+        <span class="avatar">👧</span>
+        <div class="cname">서연</div>
+        <div class="ctag">정의감 담당</div>
+      </div>
+      <div class="char-card">
+        <span class="avatar">🧒</span>
+        <div class="cname">찬성</div>
+        <div class="ctag">현실파</div>
+      </div>
+      <div class="char-card">
+        <span class="avatar">👓</span>
+        <div class="cname">윤주</div>
+        <div class="ctag">논리 분석</div>
+      </div>
+      <div class="char-card">
+        <span class="avatar">📝</span>
+        <div class="cname">인아</div>
+        <div class="ctag">기록 담당</div>
+      </div>
+      <div class="char-card">
+        <span class="avatar">📷</span>
+        <div class="cname">완채</div>
+        <div class="ctag">방송부</div>
+      </div>
+    </div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:#ffd700;border-color:#ffd700;">🧒</div>
+        <div>
+          <div class="char-name">찬성</div>
+          <div class="char-role">현실파 · 장난기 많음</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        야, 제재 기능 삭제됐다고? 그럼 뭘 해도 혼나지 않겠네?<br>
+        <span class="em">급식도 새치기해도 되는 거 아냐?</span> 솔직히 좀 신나는데...
+      </div>
+    </div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:#ff6b9d;border-color:#ff6b9d;">👧</div>
+        <div>
+          <div class="char-name">서연</div>
+          <div class="char-role">정의감 담당</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        찬성아, 그게 좋은 거야?! <span class="warn">네가 새치기하면 뒤에 있던 사람들은 어떡해?</span><br>
+        우리가 직접 나가서 확인해봐야 해!
+      </div>
+    </div>
+
+    <button class="btn-primary w100" onclick="goTo(3)">▶ 현장으로 이동하기</button>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 3: 도시 현장 맵 ============================= -->
+<div class="screen" id="screen3">
+  <div class="content">
+    <div class="scene-title">SCENE 02 — 사건 발생</div>
+    <div class="scene-heading">리버티 초등학교 주변</div>
+    <div class="scene-sub">조사할 구역을 선택하라 — 3곳 모두 조사해야 한다</div>
+
+    <div class="sys-alert">
+      <div class="sys-alert-title">⚠ 현장 경보</div>
+      <div class="sys-alert-body">
+        제재 기능 삭제 후 <span>17분</span> 경과 — 혼란 지수 급상승 중<br>
+        현장 조사 후 오류 복구가 가능합니다
+      </div>
+    </div>
+
+    <div class="chaos-meter">
+      <div class="chaos-top">
+        <span class="chaos-label">🌡 CHAOS INDEX</span>
+        <span class="chaos-num" id="chaosNum">0</span>
+      </div>
+      <div class="chaos-bar-bg">
+        <div class="chaos-bar-fill" id="chaosFill" style="width:0%"></div>
+      </div>
+      <div class="chaos-desc" id="chaosDesc">현재 평온 — 하지만 오래가지 않을 것이다</div>
+    </div>
+
+    <div class="city-map">
+      <div class="city-map-title">🗺 LIBERTY CITY MAP — 조사 구역</div>
+      <div class="map-grid" id="mapGrid">
+        <div class="map-zone danger" id="zone0" onclick="visitZone(0)">
+          <div class="zone-icon">🍽️</div>
+          <div class="zone-name">급식실</div>
+          <div class="zone-status" style="color:var(--neon-red)">혼란 발생</div>
+        </div>
+        <div class="map-zone danger" id="zone1" onclick="visitZone(1)">
+          <div class="zone-icon">🚦</div>
+          <div class="zone-name">정문 앞</div>
+          <div class="zone-status" style="color:var(--neon-red)">혼란 발생</div>
+        </div>
+        <div class="map-zone danger" id="zone2" onclick="visitZone(2)">
+          <div class="zone-icon">🚌</div>
+          <div class="zone-name">통학버스</div>
+          <div class="zone-status" style="color:var(--neon-red)">혼란 발생</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="visitedHint" class="hidden" style="text-align:center;font-family:var(--font-ui);font-size:11px;color:var(--neon-green);padding:8px;">
+      ✓ 모든 구역 조사 완료 — 다음 단계로 진행하세요
+    </div>
+    <button class="btn-primary w100 hidden" id="btnAfterMap" onclick="goTo(7)">▶ 조사 결과 분석하기</button>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 4: 급식실 ============================= -->
+<div class="screen" id="screen4">
+  <div class="content">
+    <div class="scene-title">SCENE 02-A — 급식실</div>
+    <div class="scene-heading">새치기 소동</div>
+    <div class="scene-sub">제재가 사라지자 줄이 무너지기 시작했다</div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:#ff8c42;border-color:#ff8c42;">📷</div>
+        <div>
+          <div class="char-name">완채</div>
+          <div class="char-role">방송부 · 현장 리포트</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        <span class="warn">[현장 긴급 보고]</span> 급식실 줄이 완전히 무너졌어!<br><br>
+        몇몇 애들이 <span class="warn">맨 앞으로 끼어들고</span>, 뒤에서 기다리던 애들이 화가 나서 싸우기 시작했어. 선생님이 없으니까 아무도 말릴 수가 없어.
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title">📊 상황 분석</div>
+      <div class="info-card-body">
+        <ul>
+          <li>먼저 온 순서대로 밥을 받아야 한다는 <strong>규칙이 사라졌다</strong></li>
+          <li>힘센 학생들이 앞으로 밀고 나온다</li>
+          <li>오래 기다린 학생들이 피해를 보고 있다</li>
+          <li>다툼이 늘어나 수업 시간도 늦어지고 있다</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-ui);font-size:12px;color:var(--neon-cyan);margin-bottom:12px;letter-spacing:1px;">
+      ▌ 당신이라면 어떻게 할까?
+    </div>
+    <div class="choices">
+      <button class="btn-choice danger" onclick="chooseZone4(0)">
+        <span class="choice-label">선택 A</span>
+        나도 끼어들어서 먼저 받고 싶다
+      </button>
+      <button class="btn-choice safe" onclick="chooseZone4(1)">
+        <span class="choice-label">선택 B</span>
+        줄을 다시 세우자고 모두에게 말한다
+      </button>
+      <button class="btn-choice" onclick="chooseZone4(2)">
+        <span class="choice-label">선택 C</span>
+        그냥 지켜보다가 상황을 기록한다
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 5: 정문 앞 ============================= -->
+<div class="screen" id="screen5">
+  <div class="content">
+    <div class="scene-title">SCENE 02-B — 정문 앞 횡단보도</div>
+    <div class="scene-heading">빨간불 무시</div>
+    <div class="scene-sub">제재가 없으니 아무도 신호를 지키지 않는다</div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-blue);border-color:var(--neon-blue);">👓</div>
+        <div>
+          <div class="char-name">윤주</div>
+          <div class="char-role">논리 분석</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        정문 횡단보도 상황이야. <span class="warn">신호등은 켜져 있는데 아무도 기다리지 않아.</span><br><br>
+        생각해봐. LAW OS 제재 기능이 꺼졌잖아. 무단횡단해도 벌칙이 없으니까, 모두가 "어차피 괜찮겠지" 하고 건너는 거야.<br><br>
+        그런데 차도 동시에 달려오고 있어. <span class="warn">이건 정말 위험한 상황이야.</span>
+      </div>
+    </div>
+
+    <div class="sys-alert">
+      <div class="sys-alert-title">⚠ 교통 사고 위험</div>
+      <div class="sys-alert-body">
+        무단횡단 감지: <span>12건</span> / 차량 급정거: <span>4건</span><br>
+        이 추세 지속 시 교통사고 발생 예측
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-ui);font-size:12px;color:var(--neon-cyan);margin-bottom:12px;letter-spacing:1px;">
+      ▌ 신호를 무시하고 건너는 친구에게 뭐라고 할까?
+    </div>
+    <div class="choices">
+      <button class="btn-choice danger" onclick="chooseZone5(0)">
+        <span class="choice-label">선택 A</span>
+        "나도 건너야겠다. 어차피 벌칙도 없잖아."
+      </button>
+      <button class="btn-choice safe" onclick="chooseZone5(1)">
+        <span class="choice-label">선택 B</span>
+        "기다려! 신호 없이 건너면 차에 치일 수 있어!"
+      </button>
+      <button class="btn-choice" onclick="chooseZone5(2)">
+        <span class="choice-label">선택 C</span>
+        "규칙이 없어져서 이렇게 됐어. 아리한테 기록해."
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 6: 통학버스 ============================= -->
+<div class="screen" id="screen6">
+  <div class="content">
+    <div class="scene-title">SCENE 02-C — 통학버스 정류장</div>
+    <div class="scene-heading">무임승차 소동</div>
+    <div class="scene-sub">요금 안 내도 된다는 소문이 퍼졌다</div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:#ff6b9d;border-color:#ff6b9d;">📝</div>
+        <div>
+          <div class="char-name">인아</div>
+          <div class="char-role">기록 담당</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        버스 정류장에서 이상한 일이 생겼어. <span class="warn">요금을 안 내고 그냥 타는 애들이 생긴 거야.</span><br><br>
+        LAW OS 제재 시스템이 꺼지니까 버스 회사가 벌칙을 줄 수가 없어. 소문이 퍼지면서 점점 더 많은 사람들이 무임승차를 해.<br><br>
+        근데 내가 이상하게 느낀 건... <span class="em">요금이 쌓이지 않으면 버스가 운행을 계속할 수 있을까?</span>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title">🔍 인아의 기록</div>
+      <div class="info-card-body">
+        <ul>
+          <li>무임승차자: 버스 탑승객의 약 60%</li>
+          <li>버스 기사 아저씨가 항의하지 못하는 상황</li>
+          <li>요금 수입이 줄면 → 버스 운행 감소 예측</li>
+          <li>결국 <strong>모두가 이동하기 어려워진다</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-ui);font-size:12px;color:var(--neon-cyan);margin-bottom:12px;letter-spacing:1px;">
+      ▌ "나도 공짜로 타면 되잖아"라는 친구에게 어떻게 말할까?
+    </div>
+    <div class="choices">
+      <button class="btn-choice danger" onclick="chooseZone6(0)">
+        <span class="choice-label">선택 A</span>
+        "맞아, 걸려도 벌칙 없으니까 괜찮아."
+      </button>
+      <button class="btn-choice safe" onclick="chooseZone6(1)">
+        <span class="choice-label">선택 B</span>
+        "다들 그러면 버스가 없어질 수 있어. 나는 낼게."
+      </button>
+      <button class="btn-choice" onclick="chooseZone6(2)">
+        <span class="choice-label">선택 C</span>
+        "이 상황 자체가 문제야. 기록하고 복구해야 해."
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 7: 분석 ============================= -->
+<div class="screen" id="screen7">
+  <div class="content">
+    <div class="scene-title">SCENE 03 — 조사 결과 분석</div>
+    <div class="scene-heading">무슨 일이 일어났나?</div>
+    <div class="scene-sub">윤주가 데이터를 분석한다</div>
+
+    <div class="chaos-meter">
+      <div class="chaos-top">
+        <span class="chaos-label">🌡 CHAOS INDEX</span>
+        <span class="chaos-num" id="chaosNum2">0</span>
+      </div>
+      <div class="chaos-bar-bg">
+        <div class="chaos-bar-fill" id="chaosFill2" style="width:0%"></div>
+      </div>
+      <div class="chaos-desc" id="chaosDesc2">혼란이 가중되고 있다</div>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-title">📋 현장 조사 기록</div>
+      <div class="log-entry">
+        <span class="log-time">08:13</span>
+        <span class="log-msg bad">급식실 — 새치기 난동, 학생 3명 부상 위험</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-time">08:21</span>
+        <span class="log-msg bad">정문 — 무단횡단 12건, 차량 급정거 4회</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-time">08:29</span>
+        <span class="log-msg warn">통학버스 — 무임승차 60%, 운행 중단 예고</span>
+      </div>
+      <div class="log-entry">
+        <span class="log-time">08:35</span>
+        <span class="log-msg bad">교실 — 친구 물건 가져가는 사건 7건 신고</span>
+      </div>
+    </div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-blue);border-color:var(--neon-blue);">👓</div>
+        <div>
+          <div class="char-name">윤주</div>
+          <div class="char-role">논리 분석</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        데이터를 보면 패턴이 보여.<br><br>
+        처음엔 "어차피 괜찮겠지"였어. 근데 한 명이 규칙을 어기면, 옆 사람도 어기고, 또 옆 사람도 어기기 시작해.<br><br>
+        <span class="warn">규칙이 사라지면 처음엔 자유로워 보이지만, 결국 힘센 사람만 유리해지고 나머지는 다 피해를 입어.</span><br><br>
+        이게 바로 <span class="highlight">법이 없을 때 생기는 일</span>이야.
+      </div>
+    </div>
+
+    <button class="btn-primary w100" onclick="goTo(8)">▶ 핵심 질문: 왜 규칙이 필요할까?</button>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 8: 핵심 질문 ============================= -->
+<div class="screen" id="screen8">
+  <div class="content">
+    <div class="scene-title">SCENE 03 — 핵심 탐구</div>
+    <div class="scene-heading">왜 규칙이 필요할까?</div>
+    <div class="scene-sub">아리가 질문을 던진다</div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-cyan);border-color:var(--neon-cyan);">🤖</div>
+        <div>
+          <div class="char-name">아리 (ARI)</div>
+          <div class="char-role">LAW OS 보조 AI</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        잠깐, 나는 AI니까 논리적으로 생각해볼게요.<br><br>
+        찬성이는 "규칙이 없으면 자유롭다"고 했죠? 그런데 오늘 본 것처럼, <span class="warn">규칙이 없으면 실제로 모두가 자유로워지나요?</span><br><br>
+        새치기 → 뒤에 있던 사람 피해<br>
+        무단횡단 → 모두에게 사고 위험<br>
+        무임승차 → 결국 버스가 사라짐<br><br>
+        <span class="em">규칙이 없으면 힘센 사람만 이기고, 다수가 피해를 입어요.</span>
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-ui);font-size:12px;color:var(--neon-cyan);margin-bottom:12px;letter-spacing:1px;">
+      ▌ 찬성의 말에 동의하나요?
+    </div>
+    <div class="choices">
+      <button class="btn-choice danger" onclick="choose8(0)">
+        <span class="choice-label">선택 A</span>
+        "맞아. 규칙이 없으면 자유롭고 편하다."
+      </button>
+      <button class="btn-choice safe" onclick="choose8(1)">
+        <span class="choice-label">선택 B</span>
+        "아니. 규칙이 없으면 오히려 불공평하고 위험하다."
+      </button>
+      <button class="btn-choice" onclick="choose8(2)">
+        <span class="choice-label">선택 C</span>
+        "규칙은 불편하지만 꼭 필요한 것 같다."
+      </button>
+    </div>
+
+    <div id="replyBox" class="hidden"></div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 9: 복구 선택 ============================= -->
+<div class="screen" id="screen9">
+  <div class="content">
+    <div class="scene-title">SCENE 04 — 시스템 복구</div>
+    <div class="scene-heading">LAW OS 복구 작업</div>
+    <div class="scene-sub">어떤 규칙부터 복구할까?</div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-cyan);border-color:var(--neon-cyan);">🤖</div>
+        <div>
+          <div class="char-name">아리 (ARI)</div>
+          <div class="char-role">LAW OS 보조 AI</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        복구 에너지가 <span class="highlight">하나</span>밖에 없어요. 가장 중요한 규칙 하나를 먼저 복구해야 해요.<br><br>
+        <span class="em">어떤 규칙을 가장 먼저 복구해야 할지 결정해주세요.</span>
+      </div>
+    </div>
+
+    <div class="sys-alert">
+      <div class="sys-alert-title">⚠ 복구 가능 항목</div>
+      <div class="sys-alert-body">
+        현재 삭제된 규칙: <span>줄서기 / 신호 준수 / 요금 납부 / 소유권 보호</span><br>
+        복구 에너지: <span>1개</span> (나머지는 순서대로 복구 예정)
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-ui);font-size:12px;color:var(--neon-cyan);margin-bottom:12px;letter-spacing:1px;">
+      ▌ 가장 먼저 복구할 규칙을 선택하라
+    </div>
+    <div class="choices">
+      <button class="btn-choice" onclick="chooseRestore(0)">
+        <span class="choice-label">우선순위 A</span>
+        🍽️ 급식 줄서기 규칙 (새치기 금지)
+      </button>
+      <button class="btn-choice" onclick="chooseRestore(1)">
+        <span class="choice-label">우선순위 B</span>
+        🚦 교통 신호 준수 (무단횡단 금지)
+      </button>
+      <button class="btn-choice" onclick="chooseRestore(2)">
+        <span class="choice-label">우선순위 C</span>
+        🚌 교통 요금 납부 (무임승차 금지)
+      </button>
+      <button class="btn-choice" onclick="chooseRestore(3)">
+        <span class="choice-label">우선순위 D</span>
+        🔒 소유권 보호 (절도 금지)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 10: 복구 결과 ============================= -->
+<div class="screen" id="screen10">
+  <div class="content">
+    <div class="scene-title">SCENE 04 — 복구 완료</div>
+    <div class="scene-heading" id="restoreTitle">복구 진행 중...</div>
+    <div class="scene-sub">LAW OS가 반응한다</div>
+
+    <div id="restoreResult"></div>
+
+    <div class="dialogue-box">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:var(--neon-cyan);border-color:var(--neon-cyan);">🤖</div>
+        <div>
+          <div class="char-name">아리 (ARI)</div>
+          <div class="char-role">LAW OS 보조 AI</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        어떤 규칙을 먼저 복구했든, <span class="highlight">규칙을 되살리자 상황이 나아지기 시작했어요.</span><br><br>
+        이것이 <span class="em">법의 힘</span>이에요. 법은 모두가 지켜야 하고, 어기면 제재를 받아요. 그래야 모두가 공평하게 생활할 수 있거든요.<br><br>
+        하지만 아직 모든 규칙이 복구되지 않았어요. 우리가 찾아낸 패턴이 있어요...
+      </div>
+    </div>
+
+    <button class="btn-primary w100" onclick="goTo(11)">▶ 핵심 개념 정리하기</button>
+  </div>
+</div>
+
+<!-- ============================= SCREEN 11: 엔딩 ============================= -->
+<div class="screen" id="screen11">
+  <div class="content" style="text-align:center;">
+    <div class="ending-badge">⚖️</div>
+
+    <div class="scene-title">EPISODE 01 — COMPLETE</div>
+    <div class="scene-heading">오늘 배운 것</div>
+    <div class="scene-sub" style="margin-bottom:16px;">LAW OS 핵심 개념 복구 완료</div>
+
+    <div class="key-concept">
+      <div class="key-concept-title">📚 오늘의 핵심 개념</div>
+      <ul style="text-align:left;">
+        <li><strong>법</strong>이란 나라가 만든 사회 규범이에요</li>
+        <li>법에는 <strong>강제성</strong>이 있어요 — 모두가 지켜야 해요</li>
+        <li>법을 어기면 <strong>제재</strong>를 받아요 (벌칙, 처벌)</li>
+        <li>법이 없으면 <strong>힘센 사람만 유리</strong>해지고 모두가 피해를 입어요</li>
+        <li>법은 불편하지 않고, <strong>모두를 보호</strong>하는 것이에요</li>
+      </ul>
+    </div>
+
+    <div class="dialogue-box" style="text-align:left;">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:#ffd700;border-color:#ffd700;">🧒</div>
+        <div>
+          <div class="char-name">찬성</div>
+          <div class="char-role">현실파 · 장난기 많음</div>
+        </div>
+      </div>
+      <div class="dialogue-text">
+        ...솔직히 처음엔 "신나겠다" 했는데.<br><br>
+        <span class="em">막상 규칙이 없어지니까 무서웠어.</span> 새치기하는 애들한테 밀리고, 길은 위험하고, 버스도 없어질 것 같고...<br><br>
+        규칙이 나를 <span class="highlight">보호하고 있었던 거</span>였구나.
+      </div>
+    </div>
+
+    <div class="chaos-meter" style="margin-bottom:16px;">
+      <div class="chaos-top">
+        <span class="chaos-label">최종 혼란도</span>
+        <span class="chaos-num" id="finalChaos" style="color:var(--neon-green)">0</span>
+      </div>
+      <div class="chaos-bar-bg">
+        <div class="chaos-bar-fill" id="finalChaosFill"></div>
+      </div>
+      <div class="chaos-desc" id="finalChaosMsg">복구 완료 — 도시가 안정되고 있다</div>
+    </div>
+
+    <div class="teaser">
+      <div class="teaser-label">⚠ 다음 화 예고</div>
+      <div style="font-size:14px;color:var(--text-main);margin-top:6px;font-family:var(--font-main);">
+        <strong style="color:var(--neon-red);">아리:</strong> 잠깐... 이상한 데이터가 보여요.<br>
+        누군가가 <strong>생활 법률 시스템</strong>을 다음 타겟으로 노리고 있어요.<br>
+        학교, 병원, 횡단보도 시스템이 동시에 오류를 일으킬 예정이에요.<br><br>
+        <span style="color:var(--neon-cyan);">2화: 《생활 속 법》에서 계속됩니다.</span>
+      </div>
+    </div>
+
+    <div style="font-family:var(--font-ui);font-size:10px;color:var(--text-dim);margin-top:16px;letter-spacing:1px;">
+      이 게임은 대한민국 초등학교 5학년 사회 「법과 인권」 단원 기반입니다.<br>
+      교사 PPT 수업 및 활동지와 연계하여 사용하세요.
+    </div>
+
+    <button class="btn-primary" style="margin-top:20px;" onclick="restart()">↺ 다시 하기</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   LAW OS GAME ENGINE — Episode 01
+   대한민국 초등학교 5학년 사회 「법과 인권」 연계
+   ========================================================= */
+
+// ── 상태 변수 ──
+let chaos = 0;               // 혼란도 (0~100)
+let visitedZones = new Set();
+let choices = {};            // 각 장면에서의 선택 기록
+
+// ── 혼란도 업데이트 ──
+function setChaos(val) {
+  chaos = Math.max(0, Math.min(100, val));
+  const pct = chaos + '%';
+  const colorDesc = chaos < 30 ? '안정 유지 중' : chaos < 60 ? '혼란이 가중되고 있다' : '위험 수준 — 즉각 복구 필요';
+
+  // HUD
+  document.getElementById('hudChaos').style.width = pct;
+  document.getElementById('hudChaosVal').textContent = chaos + '%';
+
+  // 인라인 혼란도 바
+  ['chaosFill','chaosFill2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = pct;
+  });
+  ['chaosNum','chaosNum2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = chaos;
+  });
+  ['chaosDesc','chaosDesc2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = colorDesc;
+  });
+
+  // HUD 상태 표시
+  const st = document.getElementById('hudStatus');
+  if (chaos >= 60) {
+    st.textContent = '● CRITICAL';
+    st.style.color = 'var(--neon-red)';
+  } else if (chaos >= 30) {
+    st.textContent = '● WARNING';
+    st.style.color = 'var(--neon-amber)';
+  } else {
+    st.textContent = '● ONLINE';
+    st.style.color = 'var(--neon-green)';
+  }
+}
+
+// ── 화면 전환 ──
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen' + n);
+  if (target) {
+    target.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+  // 특정 화면 진입 시 처리
+  if (n === 7)  syncChaosScreen7();
+  if (n === 11) showFinalResult();
+}
+
+// ── 알림 팝업 ──
+function showNotif(title, body, onClose) {
+  document.getElementById('notifTitle').textContent = title;
+  document.getElementById('notifBody').innerHTML = body;
+  document.getElementById('notifOverlay').classList.add('show');
+  window._notifCallback = onClose || null;
+}
+function closeNotif() {
+  document.getElementById('notifOverlay').classList.remove('show');
+  if (window._notifCallback) {
+    window._notifCallback();
+    window._notifCallback = null;
+  }
+}
+
+// ── 구역 방문 ──
+function visitZone(idx) {
+  const screens = [4, 5, 6];
+  goTo(screens[idx]);
+}
+
+// 구역 방문 완료 처리
+function markZoneVisited(idx) {
+  visitedZones.add(idx);
+  const zone = document.getElementById('zone' + idx);
+  if (zone) {
+    zone.classList.remove('danger');
+    zone.classList.add('visited');
+    zone.querySelector('.zone-status').textContent = '✓ 조사 완료';
+    zone.querySelector('.zone-status').style.color = 'var(--neon-green)';
+  }
+  if (visitedZones.size === 3) {
+    document.getElementById('visitedHint').classList.remove('hidden');
+    document.getElementById('btnAfterMap').classList.remove('hidden');
+  }
+}
+
+// ── 급식실 선택 ──
+function chooseZone4(idx) {
+  choices.zone4 = idx;
+  markZoneVisited(0);
+  if (idx === 0) {
+    setChaos(chaos + 15);
+    showNotif(
+      '⚠ CHAOS INCREASED',
+      '당신도 새치기를 했어요. <span class="key">혼란도 +15%</span><br><br>규칙이 없을 때 "나만 이러면 되겠지"는 결국 모두를 피해자로 만들어요.',
+      () => goTo(3)
+    );
+  } else if (idx === 1) {
+    setChaos(Math.max(0, chaos - 5));
+    showNotif(
+      '✓ GOOD ACTION',
+      '줄 세우기를 시도했어요. 완벽하진 않았지만, <span class="key">혼란이 조금 줄었어요.</span><br><br>규칙이 없을 때 누군가는 먼저 나서야 해요.',
+      () => goTo(3)
+    );
+  } else {
+    setChaos(chaos + 5);
+    showNotif(
+      '📝 RECORDED',
+      '상황을 기록했어요. <span class="key">기록도 중요한 조사 방법</span>이에요.<br><br>하지만 지금 당장 누군가는 피해를 입고 있어요.',
+      () => goTo(3)
+    );
+  }
+}
+
+// ── 정문 선택 ──
+function chooseZone5(idx) {
+  choices.zone5 = idx;
+  markZoneVisited(1);
+  if (idx === 0) {
+    setChaos(chaos + 20);
+    showNotif(
+      '⚠ DANGER! CHAOS INCREASED',
+      '<span class="key">혼란도 +20%</span> — 무단횡단은 생명과 관련된 문제예요.<br><br>제재가 없어도, 위험한 행동은 위험해요. 규칙은 나를 지키기 위해 존재해요.',
+      () => goTo(3)
+    );
+  } else if (idx === 1) {
+    setChaos(Math.max(0, chaos - 8));
+    showNotif(
+      '✓ GREAT ACTION',
+      '친구를 말렸어요. <span class="key">혼란도 -8%</span><br><br>규칙이 없어도 "위험하다"는 사실은 변하지 않아요. 당신이 옳아요.',
+      () => goTo(3)
+    );
+  } else {
+    setChaos(chaos + 5);
+    showNotif(
+      '📝 RECORDED',
+      '기록은 중요한 첫 걸음이에요. <span class="key">+5% 혼란 지속</span><br><br>기록 후 복구 행동이 뒤따라야 혼란을 막을 수 있어요.',
+      () => goTo(3)
+    );
+  }
+}
+
+// ── 버스 선택 ──
+function chooseZone6(idx) {
+  choices.zone6 = idx;
+  markZoneVisited(2);
+  if (idx === 0) {
+    setChaos(chaos + 12);
+    showNotif(
+      '⚠ CHAOS INCREASED',
+      '<span class="key">혼란도 +12%</span><br><br>지금은 괜찮아 보여도, 모두가 무임승차하면 버스 회사가 문을 닫아요. 그러면 결국 당신도 버스를 탈 수 없게 돼요.',
+      () => goTo(3)
+    );
+  } else if (idx === 1) {
+    setChaos(Math.max(0, chaos - 10));
+    showNotif(
+      '✓ EXCELLENT!',
+      '규칙의 목적을 이해했어요. <span class="key">혼란도 -10%</span><br><br>요금을 내는 건 버스 기사님뿐 아니라 나 자신을 위한 것이에요. 공공 시스템을 지키는 것이 모두를 위한 것이에요.',
+      () => goTo(3)
+    );
+  } else {
+    setChaos(chaos + 3);
+    showNotif(
+      '📝 RECORDED',
+      '<span class="key">현장 기록 완료</span><br><br>이 상황이 왜 문제인지 정확히 파악했어요. 복구 우선순위 결정에 도움이 돼요.',
+      () => goTo(3)
+    );
+  }
+}
+
+// ── 핵심 질문 선택 ──
+function choose8(idx) {
+  choices.q8 = idx;
+  const box = document.getElementById('replyBox');
+  box.classList.remove('hidden');
+  const msgs = [
+    {
+      char: '🤖', name: '아리', color: 'var(--neon-cyan)',
+      text: '흥미로운 관점이에요. 하지만 오늘 본 것처럼, <span class="warn">실제로는 힘센 사람만 자유로워졌어요.</span> 약한 사람들은 더 불편하고 위험해졌죠. 법이 없는 "자유"는 모두의 자유가 아니에요.'
+    },
+    {
+      char: '👓', name: '윤주', color: 'var(--neon-blue)',
+      text: '정확해! <span class="highlight">데이터도 그걸 증명해.</span> 규칙이 없어지자마자 피해자가 생기기 시작했어. 법은 모두를 공평하게 보호하기 위해 있는 거야.'
+    },
+    {
+      char: '👧', name: '서연', color: '#ff6b9d',
+      text: '맞아. 법이 때론 답답하게 느껴져도, <span class="highlight">없어지면 더 힘들어진다는 걸</span> 오늘 직접 봤잖아. "꼭 필요한 것"이라고 느낀 거, 그게 진짜야.'
+    }
+  ];
+  const m = msgs[idx];
+  box.innerHTML = `
+    <div class="dialogue-box" style="animation:slideUp 0.4s ease;">
+      <div class="dialogue-header">
+        <div class="char-avatar" style="color:${m.color};border-color:${m.color};">${m.char}</div>
+        <div><div class="char-name">${m.name}</div></div>
+      </div>
+      <div class="dialogue-text">${m.text}</div>
+    </div>
+    <button class="btn-primary w100" onclick="goTo(9)">▶ 시스템 복구하러 가기</button>
+  `;
+}
+
+// ── 복구 선택 ──
+const restoreData = [
+  {
+    icon: '🍽️', name: '급식 줄서기 규칙',
+    result: `<div class="sys-alert" style="border-color:var(--neon-green);animation:none;"><div class="sys-alert-title" style="color:var(--neon-green);">✓ RESTORE SUCCESS</div><div class="sys-alert-body" style="color:#a0ffc8;">급식실 줄이 다시 생겼습니다. 학생들이 순서대로 밥을 받기 시작했어요.<br>새치기 분쟁이 사라지고 교실 분위기가 안정됐어요.</div></div>`,
+    msg: '줄서기 규칙이 복구됐어요!'
+  },
+  {
+    icon: '🚦', name: '교통 신호 준수',
+    result: `<div class="sys-alert" style="border-color:var(--neon-green);animation:none;"><div class="sys-alert-title" style="color:var(--neon-green);">✓ RESTORE SUCCESS</div><div class="sys-alert-body" style="color:#a0ffc8;">신호 위반 제재가 복구됐습니다. 학생들이 신호를 지키기 시작했어요.<br>교통 사고 위험이 현저히 줄었어요.</div></div>`,
+    msg: '교통 신호 준수 규칙 복구!'
+  },
+  {
+    icon: '🚌', name: '교통 요금 납부',
+    result: `<div class="sys-alert" style="border-color:var(--neon-green);animation:none;"><div class="sys-alert-title" style="color:var(--neon-green);">✓ RESTORE SUCCESS</div><div class="sys-alert-body" style="color:#a0ffc8;">무임승차 제재가 복구됐습니다. 요금 수입이 정상화되기 시작했어요.<br>버스 운행이 유지될 수 있게 됐어요.</div></div>`,
+    msg: '교통 요금 납부 규칙 복구!'
+  },
+  {
+    icon: '🔒', name: '소유권 보호',
+    result: `<div class="sys-alert" style="border-color:var(--neon-green);animation:none;"><div class="sys-alert-title" style="color:var(--neon-green);">✓ RESTORE SUCCESS</div><div class="sys-alert-body" style="color:#a0ffc8;">소유권 보호 규칙이 복구됐습니다. 교실 내 절도 신고가 사라졌어요.<br>학생들이 자신의 물건을 안전하게 사용할 수 있게 됐어요.</div></div>`,
+    msg: '소유권 보호 규칙 복구!'
+  }
+];
+
+function chooseRestore(idx) {
+  choices.restore = idx;
+  const d = restoreData[idx];
+  // 혼란도 감소
+  setChaos(Math.max(10, chaos - 25));
+  const screen = document.getElementById('screen10');
+  document.getElementById('restoreTitle').textContent = d.icon + ' ' + d.name + ' 복구 완료';
+  document.getElementById('restoreResult').innerHTML = d.result;
+  goTo(10);
+}
+
+// ── 화면 7 혼란도 동기화 ──
+function syncChaosScreen7() {
+  const pct = chaos + '%';
+  const el = document.getElementById('chaosFill2');
+  if (el) el.style.width = pct;
+  const num = document.getElementById('chaosNum2');
+  if (num) num.textContent = chaos;
+}
+
+// ── 최종 결과 화면 ──
+function showFinalResult() {
+  const finalChaos = Math.max(5, chaos);
+  const fill = document.getElementById('finalChaosFill');
+  const num  = document.getElementById('finalChaos');
+  const msg  = document.getElementById('finalChaosMsg');
+  if (fill) fill.style.width = finalChaos + '%';
+  if (num) {
+    num.textContent = finalChaos + '%';
+    num.style.color = finalChaos < 30 ? 'var(--neon-green)' : finalChaos < 60 ? 'var(--neon-amber)' : 'var(--neon-red)';
+  }
+  if (msg) {
+    if (finalChaos < 30) msg.textContent = '우수한 조사! 도시가 빠르게 안정됐어요.';
+    else if (finalChaos < 60) msg.textContent = '도시가 서서히 회복되고 있어요. 잘했어요!';
+    else msg.textContent = '혼란이 남아있어요. 하지만 복구는 시작됐어요.';
+  }
+}
+
+// ── 다시 시작 ──
+function restart() {
+  chaos = 0;
+  visitedZones = new Set();
+  choices = {};
+  setChaos(0);
+  // 맵 초기화
+  for (let i = 0; i < 3; i++) {
+    const z = document.getElementById('zone' + i);
+    if (z) {
+      z.classList.remove('visited');
+      z.classList.add('danger');
+      const st = z.querySelector('.zone-status');
+      if (st) { st.textContent = '혼란 발생'; st.style.color = 'var(--neon-red)'; }
+    }
+  }
+  document.getElementById('visitedHint').classList.add('hidden');
+  document.getElementById('btnAfterMap').classList.add('hidden');
+  document.getElementById('replyBox').classList.add('hidden');
+  document.getElementById('replyBox').innerHTML = '';
+  goTo(0);
+}
+
+// ── 초기 혼란도 세팅 ──
+setChaos(20);
+</script>
+</body>
+</html>
